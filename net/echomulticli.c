@@ -1,5 +1,6 @@
 #include  <sys/types.h>
 #include  <sys/socket.h>
+#include  <sys/wait.h>
 #include  <time.h>
 #include  <netinet/in.h>
 #include  <stdio.h>
@@ -15,10 +16,10 @@ static char *read_ptr;
 static char read_buf[MAXLINE];
 static ssize_t
 my_read(int fd, char *ptr)
-{       
-            
+{
+
     if (read_cnt <= 0) {
-again:          
+again:
         if ( (read_cnt = read(fd, read_buf, sizeof(read_buf))) < 0) {
             if (errno == EINTR)
                 goto again; 
@@ -27,7 +28,7 @@ again:
             return(0);
         read_ptr = read_buf;
     }
-    
+
     read_cnt--;
     *ptr = *read_ptr++;
     return(1);
@@ -81,8 +82,9 @@ writen(int fd, const void *vptr, size_t n)
                 nwritten = 0;       /* and call write() again */
 				printf("write interupt\n");
 			}
-            else
+            else {
                 return(-1);         /* error */
+            }
         }
 
         nleft -= nwritten;
@@ -146,17 +148,32 @@ main(int argc, char **argv)
 	char	sendline[MAXLINE], recvline[MAXLINE];
 	char    *rptr;
 
+    signal(SIGPIPE, SIG_IGN); // 如果不忽略
+                              // 往已经已经接受到RST标记的SOCKET写数据
+                              // 将产生SIGPIPE信号并退出游戏
 	while(fgets(sendline, MAXLINE, stdin) != NULL) {
-		Writen(sockfd[0], sendline, strlen(sendline));
-		
-		if (Readline(sockfd[0], recvline, MAXLINE) == 0) {
+        // 如果对方SOCKET已关闭(kill服务器进程)
+        // 此时将会收到一个RST标记
+		if (write(sockfd[0], sendline, 1) < 0) {
+			printf("write error: %s\n", strerror(errno));
+        }
+
+        sleep(1);
+
+        // 此时会产生SIGPIPE信号
+		if (write(sockfd[0], sendline+1, strlen(sendline) - 1) < 0) {
+			printf("write error: %s\n", strerror(errno));
+        }
+
+		if (Readline(sockfd[0], recvline, MAXLINE) < 0) {
 			printf("str_cli:server terminated prematurely (%s)\n", strerror(errno));
-			return 0;
+			//return 0;
 		}
 
 		if (fputs(recvline, stdout) == EOF)
 		  printf("fputs error: %s\n", strerror(errno));
 	}
+    printf("over\n");
 
 	if (ferror(stdin)) {
         printf("fgets error: %s\n", strerror(errno));
