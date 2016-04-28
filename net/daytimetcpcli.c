@@ -16,6 +16,8 @@ main(int argc, char **argv)
 	int					sockfd, n;
 	char				recvline[MAXLINE + 1];
 	struct sockaddr_in	servaddr;
+    socklen_t           servaddr_len;
+
 
 	if (argc != 2) {
 		printf("usage: a.out <IPaddress>\n");
@@ -28,7 +30,7 @@ main(int argc, char **argv)
 
     memset(&servaddr, 0, sizeof(servaddr));
 	servaddr.sin_family = AF_INET;
-	servaddr.sin_port   = htons(13);	/* daytime server */
+	servaddr.sin_port   = htons(31353);	/* daytime server */
 	if (inet_pton(AF_INET, argv[1], &servaddr.sin_addr) <= 0) {
 		printf("inet_pton error for %s", argv[1]);
         return 0;
@@ -38,6 +40,13 @@ main(int argc, char **argv)
 		printf("connect error: %s\n", strerror(errno));
         return 0;
     }
+
+    if (getsockname(sockfd, (struct sockaddr *)&servaddr, &servaddr_len) < 0) {
+		printf("getsockname error: %s\n", strerror(errno));
+        return 0;
+    }
+    char des_ip[20];
+    printf("server ip %s:%d\n", inet_ntop(AF_INET, &servaddr.sin_addr, des_ip, 20), ntohs(servaddr.sin_port));
 
     int cnt = 0;
     printf("while\n");
