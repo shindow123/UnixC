@@ -143,9 +143,11 @@ main(int argc, char **argv)
 	char    *rptr;
 
 	while(fgets(sendline, MAXLINE, stdin) != NULL) {
-		Writen(sockfd, sendline, strlen(sendline));
-		
-		if (Readline(sockfd, recvline, MAXLINE) == 0) {
+	//	Writen(sockfd, sendline, strlen(sendline));
+        printf("input:%s\n", sendline);
+        write(sockfd, sendline, strlen(sendline));
+
+		if (read(sockfd, recvline, MAXLINE) < 0) {
 			printf("str_cli:server terminated prematurely (%s)\n", strerror(errno));
 			return 0;
 		}
