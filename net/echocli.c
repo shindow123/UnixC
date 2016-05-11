@@ -136,7 +136,7 @@ main(int argc, char **argv)
 
 	if (connect(sockfd, (const struct sockaddr *)&servaddr, sizeof(servaddr)) < 0) {
 		printf("connect error: %s\n", strerror(errno));
-        return 0;
+//        return 0;
     }
 
 	char	sendline[MAXLINE], recvline[MAXLINE];
@@ -145,7 +145,10 @@ main(int argc, char **argv)
 	while(fgets(sendline, MAXLINE, stdin) != NULL) {
 	//	Writen(sockfd, sendline, strlen(sendline));
         printf("input:%s\n", sendline);
-        write(sockfd, sendline, strlen(sendline));
+        if ((n = write(sockfd, sendline, strlen(sendline))) <= 0) {
+		  printf("write error:%s\n", strerror(errno));
+		}
+		  printf("2 write error:%s %d\n", strerror(errno), n);
 
 		if (read(sockfd, recvline, MAXLINE) < 0) {
 			printf("str_cli:server terminated prematurely (%s)\n", strerror(errno));
